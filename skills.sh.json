@@ -1,0 +1,37 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "groupings": [
+    {
+      "title": "Ornevo Agency",
+      "skills": ["ornevo-toolkit", "ornevo-digest-audit", "honcho-integration-checks", "kanban-codex-lane"]
+    },
+    {
+      "title": "Data & Analytics",
+      "skills": ["analyze", "build-dashboard", "create-viz", "data-visualization", "sql-queries", "statistical-analysis", "validate-data"]
+    },
+    {
+      "title": "Design & UX",
+      "skills": ["accessibility-review", "design-critique", "design-handoff", "design-system", "ux-copy", "user-research"]
+    },
+    {
+      "title": "Engineering",
+      "skills": ["architecture", "code-review", "debug", "deploy-checklist", "documentation", "system-design", "testing-strategy"]
+    },
+    {
+      "title": "Marketing",
+      "skills": ["brand-review", "campaign-plan", "competitive-brief", "content-creation", "email-sequence", "performance-report", "seo-audit"]
+    },
+    {
+      "title": "Operations",
+      "skills": ["compliance-tracking", "process-doc", "process-optimization", "risk-assessment", "status-report", "vendor-review"]
+    },
+    {
+      "title": "Sales",
+      "skills": ["account-research", "call-prep", "competitive-intelligence", "draft-outreach", "pipeline-review", "daily-briefing"]
+    },
+    {
+      "title": "Productivity",
+      "skills": ["task-management", "memory-management", "start", "update"]
+    }
+  ]
+}
