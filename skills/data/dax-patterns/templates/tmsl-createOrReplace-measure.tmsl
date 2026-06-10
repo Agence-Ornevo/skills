@@ -1,0 +1,128 @@
+createOrReplace
+	ref table _Measures
+		measure '_MeasureName_Total' =
+				CALCULATE (
+				    COUNTROWS ( FactTable ),
+				    FactTable[Status] = "Active",
+				    NOT ISBLANK ( FactTable[Amount] ),
+				    FactTable[Amount] > 0
+				)
+			displayFolder: D02\KPI_Name
+			lineageTag: 11111111-1111-1111-1111-111111111111
+
+		measure '_MeasureName_Var' =
+				CALCULATE (
+				    COUNTROWS ( FactTable ),
+				    FactTable[Status] = "Active",
+				    NOT ISBLANK ( FactTable[Amount] ),
+				    FactTable[Amount] > 0,
+				    FactTable[Result] < FactTable[Target]
+				)
+			displayFolder: D02\KPI_Name
+			lineageTag: 22222222-2222-2222-2222-222222222222
+
+		measure '_MeasureName_Base' =
+				VAR _total = [_MeasureName_Total]
+				VAR _var   = [_MeasureName_Var]
+				RETURN DIVIDE ( _total - _var, _total, BLANK() )
+			displayFolder: D02\KPI_Name
+			lineageTag: 33333333-3333-3333-3333-333333333333
+
+		measure '_MeasureName_Value' = [_MeasureName_Base]
+			displayFolder: D02\KPI_Name
+			lineageTag: 44444444-4444-4444-4444-444444444444
+
+		measure '_MeasureName_Target' =
+				CALCULATE (
+				    SELECTEDVALUE ( KPIConfig[TargetMonth] ),
+				    KPIConfig[KPIName] = "KPI Name %"
+				)
+			displayFolder: D02\KPI_Name
+			lineageTag: 55555555-5555-5555-5555-555555555555
+
+		measure '_MeasureName_LatestMonth' =
+				VAR _end   = EOMONTH ( TODAY(), -1 )
+				VAR _start = DATE ( YEAR ( _end ), MONTH ( _end ), 1 )
+				RETURN
+				    CALCULATE (
+				        [_MeasureName_Base],
+				        FactTable[DateColumn] >= _start,
+				        FactTable[DateColumn] <= _end,
+				        REMOVEFILTERS ( PeriodSelection )
+				    )
+			displayFolder: D02\KPI_Name
+			lineageTag: 66666666-6666-6666-6666-666666666666
+
+		measure '_MeasureName_Period' =
+				VAR _sel = SELECTEDVALUE ( PeriodSelection[PeriodName], "YTD" )
+				VAR _today = TODAY ()
+				VAR _curStart = SWITCH ( _sel,
+				    "YTD", DATE ( YEAR ( _today ), 1, 1 ),
+				    "MTD", DATE ( YEAR ( _today ), MONTH ( _today ), 1 ),
+				    "MTO (Rolling 12)", EDATE ( _today, -12 ),
+				    DATE ( YEAR ( _today ), 1, 1 )
+				)
+				RETURN
+				    CALCULATE ( [_MeasureName_Base],
+				        FactTable[DateColumn] >= _curStart,
+				        FactTable[DateColumn] <= _today
+				    )
+			displayFolder: D02\KPI_Name
+			lineageTag: 77777777-7777-7777-7777-777777777777
+
+		measure '_MeasureName_Period_Prior' =
+				VAR _sel = SELECTEDVALUE ( PeriodSelection[PeriodName], "YTD" )
+				VAR _today = TODAY ()
+				VAR _priStart = SWITCH ( _sel,
+				    "YTD", DATE ( YEAR ( _today ) - 1, 1, 1 ),
+				    "MTD", DATE ( YEAR ( _today ) - 1, MONTH ( _today ), 1 ),
+				    "MTO (Rolling 12)", EDATE ( _today, -24 ),
+				    DATE ( YEAR ( _today ) - 1, 1, 1 )
+				)
+				VAR _priEnd = DATE ( YEAR ( _today ) - 1, MONTH ( _today ), DAY ( _today ) )
+				RETURN
+				    CALCULATE ( [_MeasureName_Base],
+				        FactTable[DateColumn] >= _priStart,
+				        FactTable[DateColumn] <= _priEnd
+				    )
+			displayFolder: D02\KPI_Name
+			lineageTag: 88888888-8888-8888-8888-888888888888
+
+		measure '_MeasureName_Delta' =
+				VAR _current = [_MeasureName_Period]
+				VAR _prior   = [_MeasureName_Period_Prior]
+				RETURN
+				    IF ( NOT ISBLANK ( _current ) && NOT ISBLANK ( _prior ),
+				        _current - _prior,
+				        BLANK ()
+				    )
+			displayFolder: D02\KPI_Name
+			lineageTag: 99999999-9999-9999-9999-999999999999
+
+		measure '_MeasureName_Delta_Label' =
+				VAR _delta = [_MeasureName_Delta]
+				VAR _sign  = IF ( _delta > 0, "▲", IF ( _delta < 0, "▼", "—" ) )
+				VAR _pct   = FORMAT ( ABS ( _delta ), "0.0%" )
+				RETURN _sign & " " & _pct
+			displayFolder: D02\KPI_Name
+			lineageTag: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+
+		measure '_MeasureName_Chip_Color' =
+				VAR _current = [_MeasureName_LatestMonth]
+				VAR _target  = [_MeasureName_Target]
+				RETURN
+				    IF ( ISBLANK ( _current ), "#666666",
+				        IF ( _current >= _target, "#027A48", "#B42318" )
+				    )
+			displayFolder: D02\KPI_Name
+			lineageTag: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
+
+		measure '_MeasureName_Chip_BG_Color' =
+				VAR _current = [_MeasureName_LatestMonth]
+				VAR _target  = [_MeasureName_Target]
+				RETURN
+				    IF ( ISBLANK ( _current ), "#F0F0F0",
+				        IF ( _current >= _target, "#ECFDF5", "#FEF2F2" )
+				    )
+			displayFolder: D02\KPI_Name
+			lineageTag: cccccccc-cccc-cccc-cccc-cccccccccccc
