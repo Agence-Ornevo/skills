@@ -31,6 +31,7 @@ Never report "integrated" from health alone. Health only proves the service is u
 If any required layer is empty when content clearly exists, classify the integration as **partial**, not working.
 
 ## Partial-integration pattern
+- **Note:** After any Honcho migration, always verify that Hermes' memory provider is set to `honcho` (see the `memory-provider-checklist.md` reference).
 
 When `/health` is `{"status":"ok"}` but `search` and `reasoning` are empty while `context` is populated, the likely cause is embeddings/LLM auth, not transport. Do not report integration as healthy in this state.
 
