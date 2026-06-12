@@ -1,7 +1,9 @@
 ---
 name: code-review
-description: Review code changes for security, performance, and correctness. Trigger with a PR URL or diff, "review this before I merge", "is this code safe?", or when checking a change for N+1 queries, injection risks, missing edge cases, or error handling gaps.
-argument-hint: "<PR URL, diff, or file path>"
+description: Review pull requests, diffs, or code files for quality, security, and best practices.
+args_hint: "<PR URL, diff, or file path>"
+command: code-review
+entry: scripts/code_review_main.py
 ---
 
 # /code-review

@@ -90,6 +90,15 @@ sudo apt update && sudo apt install -y <package>
 docker exec -it <container> bash -c "apt update && apt install -y <package>"
 ```
 
+## Plane CE — Critical Operations
+
+**Proxy ACME config:** Plane's Caddy proxy requires `CERT_ACME_CA` and `CERT_ACME_DNS` set in `.env` (even if empty) or Caddyfile parsing fails. See `references/plane-operations.md` for fix and full update procedure.
+
+**Compose command pattern:** Every Plane `docker compose` command **must** use both env files:
+```bash
+docker compose --env-file variables.env --env-file .env <cmd>
+```
+
 ## Brevo & Bitrix24 (Cloud services, not on-prem)
 
 - **Brevo:** Cloud at app.brevo.com — MCP via `https://mcp.brevo.com/v1/brevo/mcp`

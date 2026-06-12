@@ -1,6 +1,9 @@
 ---
 name: draft-outreach
-description: Research a prospect then draft personalized outreach. Uses web research by default, supercharged with enrichment and CRM. Trigger with "draft outreach to [person/company]", "write cold email to [prospect]", "reach out to [name]".
+description: Draft personalized sales outreach emails, LinkedIn messages, or call scripts.
+command: draft-outreach
+entry: scripts/draft_outreach_main.py
+args_hint: "<target> [campaign type] [tone]"
 ---
 
 # Draft Outreach

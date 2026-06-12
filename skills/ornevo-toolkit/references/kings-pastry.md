@@ -176,7 +176,7 @@ Total throughput cs/lh = (outbound cases + inbound equiv cases) / labour hours
 
 ---
 
-## D02 — Service & Fulfillment (key findings from Client_Data_Questions.docx)
+## D02 — Service & Fulfillment (key findings from Client_Data_Questions.docx + API data)
 
 ### New Information / Confirmations
 1. **Fill Rate UOM:** FG level is all by cases. No mixed-UOM conversion needed — simplifies calculation.
@@ -186,6 +186,18 @@ Total throughput cs/lh = (outbound cases + inbound equiv cases) / labour hours
 5. **Channel slicer:** ENT-217 (SharePoint) has Channel column. Need to confirm exact column header name and code match with BC dimension values.
 6. **Region slicer:** ENT-217 has Customer No. but no State/Province. Join: ENT-217 → BC Customer → Ship-to Address (Table 222) → County. Feasible but needs region value cleanup. Use Posted Sales Invoice table for correct ship-to address.
 7. **Product Category:** Item codes in ENT-217 match BC Item No. exactly — no cross-reference mapping needed.
+8. **Inventory Posting Group Codes (CONFIRMED from API extraction, Jun 4):** FG = Finished Goods, RAW = Raw Ingredients, PKG = Packaging Items, WIP = Work in Progress, DIST = Distribution Items, GS = General Supply. **This UNBLOCKS KPI-4 (Stockout FG) and KPI-5 (Stockout Ingredients).** Filter: `bc_Item[Inventory_Posting_Group] = "FG"` or `"RAW"`.
+9. **API vs SQL field names:** BC API uses camelCase (number, displayName, itemCategoryCode, inventoryPostingGroupCode, shipmentDate, postingDate). SQL DDBB uses PascalCase (No, Description, Item_Category_Code, Inventory_Posting_Group, Shipment_Date, Posting_Date). Power BI uses whichever source you connect to.
+10. **OTIF join path:** Start with header-level promise (SalesShipmentLine → SalesShipmentHeader → SalesHeader). Switch to line-level (SalesLineArchive) if data looks wrong. Key question: Is Promised_Delivery_Date at header or line level in the SQL DDBB?
+11. **bc.SalesShipmentLine has Shipment_Date at line level** — this is the actual delivery date for OTIF "on-time" check. Confirmed from API data (48,637 rows).
+12. **bc.ItemCategory has NO parent_category field in API** — the 77 category codes ARE the Level 1 values. The SQL DDBB may have Parent_Category.
+
+### D02 Build Knowledge (Jun 4)
+- D02-specific build knowledge base at: `D02_Service_Fulfillment/` folder in Kings Pastry repo
+- Contains: Build plan, data source map, data structure analysis, DAX measures, KPI definitions, validation checklist
+- Subfolder structure: Build/, Data_Sources/, DAX/, Documentation/, Validation/
+- Key open questions: Promised_Delivery_Date location, pbi.DailyInventorySnapshot column names, Order_No join format
+- OTIF-first approach: Build OTIF card first (most complex join), validate data model, then duplicate for remaining 5 KPIs
 
 ---
 

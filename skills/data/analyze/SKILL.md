@@ -1,7 +1,9 @@
 ---
 name: analyze
-description: Answer data questions -- from quick lookups to full analyses. Use when looking up a single metric, investigating what's driving a trend or drop, comparing segments over time, or preparing a formal data report for stakeholders.
-argument-hint: "<question>"
+description: Answer data questions — from quick lookups to full analysis.
+args_hint: "<question>"
+command: analyze
+entry: scripts/analyze_main.py
 ---
 
 # /analyze - Answer Data Questions

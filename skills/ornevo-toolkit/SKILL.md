@@ -8,6 +8,9 @@ platforms: [macos, web]
 metadata:
   hermes:
     tags: [Ornevo, agency, freelance, n8n, mattermost, figma, openproject, scm-analytics]
+command: ornevo-toolkit
+entry: scripts/ornevo_toolkit_main.py
+args_hint: "[overview|project|setup|help]"
 ---
 
 # Ornevo Agency & Freelance Tool Stack
@@ -42,8 +45,8 @@ Reference for Hernan Solano's active tool stack across Ornevo agency operations 
 Standard subfolder pattern for dashboard builds:
 ```
 Dashboard_Name/
-  Build/           ← Build plans, template analysis
-  Data_Sources/    ← Source maps, SQL queries, column verification
+  Build/           ← Build plans, template analysis, deep-dive docs
+  Data_Sources/    ← Source maps, SQL queries, column verification, data structure analysis
   DAX/             ← Measures, date tables, calculation groups
   Documentation/   ← KPI definitions, slicer rules, grain specs
   Validation/      ← Checklists, data quality notes
@@ -51,15 +54,53 @@ Dashboard_Name/
 
 **Trigger:** When Hernan says "keep things organized" or "we should have subfolders", create this structure immediately.
 
+### Dashboard Build Approach — Level 1 First
+
+**Rule:** Always start with Level 1 (Tier 1 KPI cards + x-axis). Defer L2/L3 to a separate phase.
+
+**Why:** L1 validates the entire data model (joins, relationships, date table, calculation group). L2 is significantly more complex and depends on L1 working correctly.
+
+**Build sequence:**
+1. Analyze template (D07 V2 or equivalent) — extract date table, calc group, card layout
+2. Connect data sources + build relationships
+3. Write base measures for the most complex KPI first (validates the model)
+4. Create card visual with 9-layer design
+5. Add slicers + verify period switching works
+6. Duplicate card for remaining KPIs
+7. Full validation
+
+**Trigger:** When Hernan says "Level 1 only" or "just the cards" or "L2 is too complicated", scope to L1 only and defer L2.
+
+### Planning Approach — Ground in Source Documents
+
+**Rule:** When re-planning a dashboard build, ALWAYS read the source documents first:
+- Wireframe HTML (e.g., ControlTowerV9.html) — for KPI definitions, L2 composition, visual layout
+- KPI spec Excel (e.g., KPI_Data_Spec_Template_V6.xlsx) — for calculation methods, thresholds
+- Dashboard documentation .md files — for field lists, data sources, removed KPIs
+- Existing build plans (.hermes/plans/) — for prior analysis and decisions
+
+**Do NOT generate generic plans from scratch.** Extract specific field names, formulas, and thresholds from the documents. Reference them explicitly in the plan.
+
+**Trigger:** When Hernan says "re-plan" or "get the calculation methodology from" or "use the wireframe/docs".
+
 ## Kings Pastry Control Tower (hdsolanop/Kings-pastry)
 
 Supply chain visibility & analytics dashboard suite for Kings Pastry (bakery, Hong Kong / Canada). 8 Power BI dashboards covering executive overview, service fulfillment, inventory, production, procurement, cost management, warehouse operations, and alerts. Full project data, data sources, build schedule, per-dashboard specifications, and client-confirmed thresholds at `references/kings-pastry.md`.
 
 **Quick stats:** 8 dashboards, 42 KPIs. HS owns D01/D02/D03/D08 (24 KPIs). MR owns D04/D05/D06/D07 (18 KPIs). Build window: Jun 1-10 in 4 parallel pairs. L3 drill-downs due 1 week after each build.
 
-**D07 data extraction (Jun 3-4, 2026):** 10 of 11 tables available. 7 via BC API (`data_extract/extract_d07_api.py`) + 3 manual exports (Warehouse Entry TXT→CSV, Sales Header Archive Excel→CSV, Sales Line Archive Excel→CSV). Bin (7354) excluded — cannot be exported from BC. Capacity Utilization calculation pending Shine confirmation. Labour KPI uses ADP report from SharePoint. Full documentation in `data_extract/README.md` and `data_extract/D07_Data_Source_Reference.docx` in the Kings Pastry repo.
+**D07 data extraction (Jun 3-4, 2026):** 10 of 11 tables available. 7 via BC API (`data_extract/extract_d07_api.py`) + 3 manual exports (Warehouse Entry TXT→CSV 425K rows, Sales Header Archive Excel→CSV 3.3K rows, Sales Line Archive Excel→CSV 20.5K rows). Bin (7354) excluded — cannot be exported from BC (no standard page). Capacity Utilization calculation pending Shine confirmation. Labour KPI uses ADP report from SharePoint (`Labor Cost Master ADP.xlsx`). Full documentation in `data_extract/README.md` and `data_extract/D07_Data_Source_Reference.docx`.
 
-**BC API patterns:** Authentication quirks (special chars in secrets), line-table access patterns (navigation vs direct), pagination (`@odata.nextLink` omission → `$skip` fallback), `in` operator not supported (use batched `or`), date filtering, and entity availability are all documented in `references/bc-api-patterns.md`. **Always check this before writing BC API extraction code.**
+**D02 build knowledge:** Field names, join paths, posting group codes, card design specs, and open questions at `references/kings-pastry-d02-build.md`. Always check this before working on D02. Detailed DAX pattern reference at `references/d07-dax-pattern.md`.
+
+**D02 data model (verified 2026-06-04):** 7 SQL tables + 3 DAX tables. 8 relationships (6 active, 2 inactive). SalesLine has all OTIF fields at line level. Measure pattern: D07 style (_total, _var, _Base). X-axis: D01 explicit FILTER pattern. Card: 9-layer, 380x200px. Documentation: 10 files, 2,539 lines in `D02_Service_Fulfillment/`. Relationship matrix at `Data_Sources/D02_Complete_Data_Map.md`. DAX measures at `DAX/D02_DAX_Measures.md`.
+
+**BC API patterns:** Authentication quirks (special chars in secrets), line-table access patterns (navigation vs direct), pagination (`@odata.nextLink` omission → `$skip` fallback), `in` operator not supported (use batched `or`), date filtering, entity availability, and cross-session credential storage are all documented in `references/bc-api-patterns.md`. **Always check this before writing BC API extraction code.**
+
+**BC API cross-session setup:** Secret stored at `~/.hermes/kings-pastry/bc_secret.txt`, non-secret config at `config/bc_api.env`. New sessions should read `CLAUDE.md` + `references/bc-api-patterns.md` for the full pattern.
+**BC API patterns:** Authentication quirks (special chars in secrets), line-table access patterns (navigation vs direct), pagination (`@odata.nextLink` omission → `$skip` fallback), `in` operator not supported (use batched `or`), date filtering, entity availability, and cross-session credential storage are all documented in `references/bc-api-patterns.md`. **Always check this before writing BC API extraction code.**
+
+**BC API cross-session setup:** Secret stored at `~/.hermes/kings-pastry/bc_secret.txt`, non-secret config at `config/bc_api.env`. New sessions should read `CLAUDE.md` + `references/bc-api-patterns.md` for the full pattern.
 
 **Key files in repo:**
 - `V2_Out_of_Scope_Tracker.md` — D08 deferred, out-of-scope features, post-build trail
@@ -71,13 +112,17 @@ Supply chain visibility & analytics dashboard suite for Kings Pastry (bakery, Ho
 
 Sophisticated multi-system finance tracking. Full detail at `references/personal-finance.md`.
 
-**Architecture:** NocoDB (nocodb.hernansolano.com) = raw transaction store. Sure (self-hosted Maybe fork, sure.hernansolano.com) = analysis/budgeting/net worth. HTML dashboard with Chart.js + Claude Haiku AI.
+**Architecture:** NocoDB (nocodb.hernansolano.com) = raw transaction store. Sure (self-hosted Maybe fork, sure.hernansolano.com) = analysis/budgeting/net worth. HTML dashboard with Chart.js + AI assessment. Email scanner cron (2x daily) auto-parses bank emails → NocoDB.
 
-**7 accounts:** Davibank Ahorro, Davibank Bolsillo, BlackCard CC (EUR/COP), Addi loan, Nequi, Cash (COP), Wise EUR, Wise USD.
+**8 accounts:** Davibank Ahorro, Davibank Bolsillo, BlackCard CC (EUR/COP), Addi loan, Nequi, Cash (COP), Wise EUR, Wise USD.
+
+**⚠️ Sure API endpoint (fixed June 2026):** `POST /api/v1/transactions` works for ALL account types. The old endpoint `POST /accounts/{id}/transactions` returns 404. Amounts are always stored in EUR — convert COP→EUR before sending. See `references/personal-finance.md` for full details.
 
 **Key dependency:** Self-hosted Sure instance at `sure.hernansolano.com` — if down, entire dashboard breaks. Set up health monitoring.
 
-**Import status:** 1,406+ transactions as of May 27 2026. Weekly upload cycle (ideally Sunday).
+**NocoDB MCP:** The repo contains `.mcp.json` with the MCP endpoint config. See `references/personal-finance.md` for the Hermes config snippet and email-to-NocoDB pipeline plan.
+
+**Import status:** 1,735+ transactions as of Jun 20 2026. 135 depository transactions backfilled. Weekly upload cycle (ideally Sunday).
 
 **Note:** Repo was cloned from Windows machine — paths reference `C:\\Users\\herna\\`. `.bat` files for sync_scripts are Windows-only.
 

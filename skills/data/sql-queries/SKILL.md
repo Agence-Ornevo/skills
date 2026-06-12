@@ -1,7 +1,10 @@
 ---
 name: sql-queries
-description: Write correct, performant SQL across all major data warehouse dialects (Snowflake, BigQuery, Databricks, PostgreSQL, etc.). Use when writing queries, optimizing slow SQL, translating between dialects, or building complex analytical queries with CTEs, window functions, or aggregations.
+description: Write correct, performant SQL across all major data warehouses.
 user-invocable: false
+command: sql-queries
+entry: scripts/sql_queries_main.py
+args_hint: "<question or requirement> [dialect]"
 ---
 
 # SQL Queries Skill

@@ -3,6 +3,9 @@ name: ornevo-digest-audit
 description: "Monthly audit of the Ornevo Daily Digest system — source review, ranking, new topic evaluation, process improvements."
 version: 1.0.0
 author: Novum
+command: ornevo-digest-audit
+entry: scripts/digest_audit_main.py
+args_hint: "[run|check|sources|help]"
 ---
 
 # Ornevo Monthly Digest Audit

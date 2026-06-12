@@ -27,8 +27,8 @@ Azure AD client secrets may contain characters (tilde, underscore, plus, slash) 
 import os, urllib.request, urllib.parse, json
 
 # Read secret from file to avoid shell/Python interpretation of special chars
-# Store the secret file outside the repo (e.g., ~/.hermes/.bc_secret)
-CLIENT_SECRET = open(os.path.expanduser('~/.hermes/.bc_secret')).read().strip()
+# Store the secret file outside the repo at the persistent path
+CLIENT_SECRET = open(os.path.expanduser('~/.hermes/kings-pastry/bc_secret.txt')).read().strip()
 
 def get_token():
     data = urllib.parse.urlencode({
@@ -323,11 +323,84 @@ ADP Labor File (SharePoint)
 
 ---
 
-## Credential Storage
+## Credential Storage — Cross-Session Pattern
 
 **NEVER embed credentials in scripts or commit to repo.**
 
-Use `.env` for non-secret config + `.env.secret` for the client secret (gitignored).
-Load with `python-dotenv` or `open().read().strip()`.
+### Persistent Secret Location
 
-Full credential values stored in agent memory, not in this file.
+Store the BC client secret outside the repo in Hermes home:
+
+```
+~/.hermes/kings-pastry/bc_secret.txt   ← secret (chmod 600, never committed)
+config/bc_api.env                        ← non-secret params (committed to repo)
+data_extract/.env                        ← local override (gitignored)
+```
+
+### Project Config File (committed)
+
+`config/bc_api.env` contains all non-secret BC API parameters:
+
+```bash
+BC_TENANT_ID=dc1d12bc-3f8d-4059-ad23-8f594cb4dae5
+BC_CLIENT_ID=6cdc1f98-bacb-4200-b484-9beca96faf7a
+BC_COMPANY_ID=dab2b5f8-7c90-ee11-817a-002248b32b5b
+BC_SECRET_FILE=/Users/hdsolanop/.hermes/kings-pastry/bc_secret.txt
+BC_BASE_URL=https://api.businesscentral.dynamics.com/v2.0/production/api/v2.0
+```
+
+### Usage in Python Scripts
+
+```python
+import os
+from pathlib import Path
+
+# Load non-secret config from project
+config = {}
+config_path = Path('config/bc_api.env')
+if config_path.exists():
+    for line in config_path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith('#') and '=' in line:
+            k, v = line.split('=', 1)
+            config[k.strip()] = v.strip()
+
+# Read secret from persistent location
+secret_file = config.get('BC_SECRET_FILE', '~/.hermes/kings-pastry/bc_secret.txt')
+client_secret = open(os.path.expanduser(secret_file)).read().strip()
+```
+
+### Making API Available in a New Session
+
+1. Ensure `~/.hermes/kings-pastry/bc_secret.txt` exists (create from memory if needed)
+2. Load `config/bc_api.env` for connection parameters
+3. Read secret from file at runtime — never hardcode
+4. The project `CLAUDE.md` also documents the BC API connection for Hermes sessions
+
+**Full credential values stored in agent memory, not in this file.**
+
+---
+
+## Verified Endpoints (tested 2026-06-04)
+
+| Endpoint | BC Object | Status | Notes |
+|----------|-----------|--------|-------|
+| `items` | 27 | ✅ | 3,023 rows. Fields: number, displayName, itemCategoryCode, inventoryPostingGroupCode |
+| `itemCategories` | 5722 | ✅ | 77 rows. Fields: code, displayName. No parent hierarchy — codes ARE Level 1 |
+| `salesShipments` | 110 | ✅ | 6,218 rows. Fields: number, orderNumber, postingDate, customerNumber |
+| `salesShipmentLines` | 111 | ✅ | 48,637 rows. Fields: documentNo, sequence, lineObjectNumber, quantity, shipmentDate |
+| `purchaseReceipts` | 120 | ✅ | 12,578 rows |
+| `purchaseReceiptLines` | 121 | ✅ | 19,401 rows |
+| `itemLedgerEntries` | 32 | ✅ | 224,603 rows. Entry types: Output, Sale, Purchase, Consumption, Transfer, Positive Adjmt., Negative Adjmt. |
+| `salesOrders` | 36 | ⚠ Partial | Header only. Has requestedDeliveryDate but NO promisedDeliveryDate. Lines endpoint returns 404. |
+| `customers` | 18 | ✅ | Fields: number, displayName, country, state, postalCode, salespersonCode |
+
+### D02-Specific API Notes
+
+- **SalesOrder lines (37)**: NOT available via API. Use SQL DDBB bc.SalesLine instead.
+- **SalesOrder promised date**: NOT on API SalesOrder header. Use SQL DDBB bc.SalesHeader[Promised_Delivery_Date].
+- **SalesLine has all OTIF fields at line level**: ShipmentDate, PromisedDeliveryDate, QuantityShipped, Quantity — all confirmed in SQL DDBB.
+- **Inventory Posting Groups** (from items.csv): FG, RAW, PKG, WIP, DIST, GS, OFFICE, CLEAN
+- **Item Categories** (from item_categories.csv): 77 categories = Level 1 values (no parent hierarchy)
+- **Order number join**: SalesShipments[orderNumber] → SalesHeader[No] — VERIFIED 1,632 matches in CSV data
+- **DailyInventorySnapshot**: Pre-built pbi view. Columns: SnapshotDate, ItemNo, ItemCategory, Quantity (≤0 = stockout), StockIn, StockOut, LocationCode. NOT available via BC API — SQL only.
