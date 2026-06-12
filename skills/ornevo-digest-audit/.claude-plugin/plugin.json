@@ -1,0 +1,8 @@
+{
+  "name": "ornevo-digest-audit",
+  "version": "1.0.0",
+  "description": "Monthly digest audit skill",
+  "author": {
+    "name": "Agence-Ornevo"
+  }
+}
